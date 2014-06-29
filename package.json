@@ -1,0 +1,28 @@
+{
+  "name": "pull-broadcast",
+  "version": "0.0.1",
+  "main": "./broadcast.js",
+  "description": "Create a broadcast pull-stream.",
+  "homepage": "https://github.com/tounano/pull-broadcast/",
+  "author": "ClickHere <js@clickhere.co.il>",
+  "keywords": [
+    "streams",
+    "pull-stream",
+    "broadcast"
+  ],
+  "licenses": {
+    "type": "The MIT License",
+    "url": "http://www.opensource.org/licenses/mit-license.php"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tounano/pull-broadcast"
+  },
+  "engines": {
+    "node": ">=0.6.11 <=0.7.0 || >=0.7.3"
+  },
+  "dependencies": {
+    "pull-stream": "latest",
+    "underscore": "latest"
+  }
+}
