@@ -55,7 +55,7 @@ pull(
 With [npm](https://npmjs.org) do:
 
 ```
-npm install pull-substream
+npm install pull-broadcast
 ```
 
 ## license
