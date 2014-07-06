@@ -5,6 +5,10 @@ var events = [
   {
     name: "SomeEvent",
     value: 0
+  },
+  {
+    name: "SomeEvent2",
+    value: 0
   }
 ];
 
@@ -15,11 +19,19 @@ function plusSomethingMappper(num) {
   }
 }
 
+var delayedMap = function(d, done) {
+  setTimeout( function () {
+    done (null, d);
+  }, 1000)
+}
+
 pull(
   pull.values(events),
   broadcast(
-    pull.map(plusSomethingMappper(2)),
-    pull.map(plusSomethingMappper(4))
+    pull.map(plusSomethingMappper(1)),
+    pull.asyncMap(delayedMap),
+    pull.map(plusSomethingMappper(3)),
+    pull.map(plusSomethingMappper(6))
   ),
   pull.drain(console.log)
 )

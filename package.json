@@ -23,6 +23,8 @@
   },
   "dependencies": {
     "pull-stream": "latest",
+    "pull-spawn": "latest",
+    "pull-robin": "latest",
     "underscore": "latest"
   }
 }
