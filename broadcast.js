@@ -24,7 +24,7 @@ var broadcast = module.exports = pull.Through(function (read, streams) {
   streams = streams.reverse()
   var sources = [];
   for (var i = 0; i<streams.length; ++i)
-    sources.push(streams[i].observed ? streams[i].observed : streams[i]);
+    sources.push(streams[i].child ? streams[i].child : streams[i]);
 
   return robin(true,sources);
 })
