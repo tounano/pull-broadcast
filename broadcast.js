@@ -2,13 +2,14 @@ var _ = require("underscore");
 var pull = require("pull-stream");
 var spawn = require("pull-spawn");
 var robin = require("pull-robin");
+var control = require("pull-control");
 
 module.exports = pull.Through(function (read, streams) {
   var args = [].slice.call(arguments);
   read = args.shift();
   streams = _.isArray(args[0]) ? args[0] : args;
 
-  var readables = [], queues = [], reading = false, waitingForData = [], ended = false, cbs = [];
+  var readables = [], queues = [], reading = false, waitingForData = [], ended, ending, cbs = [];
 
   // Init readables and queues
   for (var i = 0; i < streams.length; ++i) {
@@ -30,9 +31,9 @@ module.exports = pull.Through(function (read, streams) {
     waitingForData.push(done);
     if (reading) return;
     reading = true;
-    read(null,  function (end, data) {
+    read(ended,  function (end, data) {
       reading = false;
-      if (end === true) ended = true;
+      if (end) ending = end;
 
       _.each(queues, function (q) {
         q.push([end, _.clone(data)]);
@@ -46,10 +47,13 @@ module.exports = pull.Through(function (read, streams) {
   var streamcount = streams.length;
 
   return function (end, cb) {
-    if (end) return cb(end);
+    ended = ended || end;
     cbs.push(cb);
 
     ;(function drain () {
+      if (ending && !streamcount)
+        ended = ending
+
       while (ended && !streamcount && cbs.length)
         cbs.shift()(ended);
 
@@ -57,9 +61,9 @@ module.exports = pull.Through(function (read, streams) {
         var stream = streams.shift();
         var cb = cbs.shift();
 
-        return stream(null,  function (end, data) {
+        return stream(ended || ending,  function (end, data) {
           --streamcount;
-          if (end === true) {cbs.unshift(cb); return drain();};
+          if (end) {cbs.unshift(cb); return drain();};
           ++streamcount;
           streams.push(stream);
           cb(end, data);
@@ -70,7 +74,7 @@ module.exports = pull.Through(function (read, streams) {
   }
 });
 
-var broadcast = module.exports = pull.Through(function (read, streams) {
+var broadcast = pull.Through(function (read, streams) {
   var args = [].slice.call(arguments);
   read = args.shift();
   streams = _.isArray(args[0]) ? args[0] : args;

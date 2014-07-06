@@ -9,6 +9,10 @@ var events = [
   {
     name: "SomeEvent2",
     value: 0
+  },
+  {
+    name: "SomeEvent3",
+    value: 0
   }
 ];
 
