@@ -2,96 +2,29 @@ var _ = require("underscore");
 var pull = require("pull-stream");
 var spawn = require("pull-spawn");
 var robin = require("pull-robin");
-var control = require("pull-control");
 
-module.exports = pull.Through(function (read, streams) {
-  var args = [].slice.call(arguments);
-  read = args.shift();
-  streams = _.isArray(args[0]) ? args[0] : args;
-
-  var readables = [], queues = [], reading = false, waitingForData = [], ended, ending, cbs = [];
-
-  // Init readables and queues
-  for (var i = 0; i < streams.length; ++i) {
-    queues[i] = [];
-    readables[i] =  function (id) {
-      return pull.Source(function (end, cb) {
-        if (queues[id].length) return cb(queues[id][0][0], queues[id].shift()[1]);
-        if (ended) return cb(ended);
-        readFromUpstream(function () {
-          return cb(queues[id][0][0], queues[id].shift()[1]);
-        });
-      });
-    }(i);
-
-    streams[i] = pull(readables[i], streams[i]);
-  }
-
-  function readFromUpstream(done) {
-    waitingForData.push(done);
-    if (reading) return;
-    reading = true;
-    read(ended,  function (end, data) {
-      reading = false;
-      if (end) ending = end;
-
-      _.each(queues, function (q) {
-        q.push([end, _.clone(data)]);
-      });
-
-      while (waitingForData.length)
-        waitingForData.shift()();
-    });
-  }
-
-  var streamcount = streams.length;
-
-  return function (end, cb) {
-    ended = ended || end;
-    cbs.push(cb);
-
-    ;(function drain () {
-      if (ending && !streamcount)
-        ended = ending
-
-      while (ended && !streamcount && cbs.length)
-        cbs.shift()(ended);
-
-      if (streams.length && streamcount && cbs.length) {
-        var stream = streams.shift();
-        var cb = cbs.shift();
-
-        return stream(ended || ending,  function (end, data) {
-          --streamcount;
-          if (end) {cbs.unshift(cb); return drain();};
-          ++streamcount;
-          streams.push(stream);
-          cb(end, data);
-          drain();
-        });
-      }
-    })();
-  }
-});
-
-var broadcast = pull.Through(function (read, streams) {
+var broadcast = module.exports = pull.Through(function (read, streams) {
   var args = [].slice.call(arguments);
   read = args.shift();
   streams = _.isArray(args[0]) ? args[0] : args;
 
   if (streams.length <=1) return streams[0];
 
+  // observe in reverse order so that the first stream would be the main thread
   streams = streams.reverse();
-  streams[0] = spawn.observe(streams[0])(read)
-  for (var i=1; i < streams.length-1; ++i)
-    streams[i] = spawn.observe(streams[i])(streams[i-1]);
-  streams[streams.length-1] = streams[streams.length-1](streams[streams.length-2]);
+  for (var i = 0; i < streams.length-1; ++i)
+    streams[i] = spawn.observe(streams[i]);
 
-  streams = streams.reverse();
+  // chain the through streams
+  streams[0] = streams[0](read);
+  for (var i = 1; i < streams.length; ++i)
+    streams[i] = streams[i](streams[i-1]);
 
-  var sources = [streams[0]];
-  for (var i = 1; i<streams.length; ++i)
-    sources.push(streams[i].observed);
+  // Restore to the original order for round-robin
+  streams = streams.reverse()
+  var sources = [];
+  for (var i = 0; i<streams.length; ++i)
+    sources.push(streams[i].observed ? streams[i].observed : streams[i]);
 
-  return robin(sources);
+  return robin(true,sources);
 })

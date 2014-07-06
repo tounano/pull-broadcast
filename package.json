@@ -1,6 +1,6 @@
 {
   "name": "pull-broadcast",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "main": "./broadcast.js",
   "description": "Create a broadcast pull-stream.",
   "homepage": "https://github.com/tounano/pull-broadcast/",
