@@ -10,10 +10,10 @@ var broadcast = module.exports = pull.Through(function (read, streams) {
 
   if (streams.length <=1) return streams[0];
 
-  // observe in reverse order so that the first stream would be the main thread
+  // consume in reverse order so that the first stream would be the main thread
   streams = streams.reverse();
   for (var i = 0; i < streams.length-1; ++i)
-    streams[i] = spawn.observe(streams[i]);
+    streams[i] = spawn.consume(streams[i]);
 
   // chain the through streams
   streams[0] = streams[0](read);
